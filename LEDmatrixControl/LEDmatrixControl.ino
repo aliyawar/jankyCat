@@ -11,16 +11,16 @@
 EthernetClient client;
 
 byte mac[] = {
-  0x00, 0xAA, 0xBB, 0xCC, 0xDE, 0x03
+  0xEC, 0xAA, 0xBB, 0xCC, 0xDE, 0x43
 };
-IPAddress ip(172, 28, 140, 157);
+//IPAddress ip(172, 28, 140, 157);
 
 // HARDWARE SPI
 // MD_Parola P = MD_Parola(CS_PIN, MAX_DEVICES);
 // SOFTWARE SPI
 MD_Parola P = MD_Parola(DATA_PIN, CLK_PIN, CS_PIN, MAX_DEVICES);
 
-#define PAUSE_TIME    1000
+#define PAUSE_TIME    500
 #define SPEED_DEADBAND  5
 
 // Scrolling parameters
@@ -36,7 +36,7 @@ textEffect_t  scrollEffect = PA_SCROLL_LEFT;
 
 // Global message buffers shared by Serial and Scrolling functions
 #define BUF_SIZE  75
-char curMessage[BUF_SIZE];
+char curMessage[BUF_SIZE+1];
 char newMessage[BUF_SIZE];
 bool newMessageAvailable = false;
 
@@ -51,11 +51,17 @@ EthernetUDP Udp;
 
 void setup()
 {
+  Serial.begin(9600);
+
   P.begin();
   P.displayClear();
   P.displaySuspend(false);
 
-  Ethernet.begin(mac, ip);
+  Ethernet.begin(mac);
+  IPAddress ip = Ethernet.localIP();
+  Serial.print(ip);
+
+
   Udp.begin(localPort);
 
   P.displayScroll(curMessage, PA_LEFT, scrollEffect, frameDelay);
@@ -63,7 +69,6 @@ void setup()
   strcpy(curMessage, "get off of facebook");
   newMessage[0] = '\0';
 
-  Serial.begin(9600);
 
 }
 
@@ -88,7 +93,7 @@ void loop()
     
     // read the packet into packetBufffer
     
-    Udp.read(packetBuffer, BUF_SIZE);
+    Udp.read(packetBuffer, packetSize-1);
     Serial.println(packetBuffer);
 
     // send a reply to the IP address and port that sent us the packet we received
@@ -97,7 +102,19 @@ void loop()
     Udp.endPacket();
 
     strcpy(curMessage, packetBuffer);
+//    curMessage[packetSize+1] = '\0';
+
+//    for(int i=0;i<packetSize-1;i++) 
+//    {
+//      curMessage[i] = packetBuffer[i];
+//    }
+//    curMessage[packetSize+1] = '0';
+    Serial.println(curMessage);
+
+//    curMessage = packetBuffer;
     for(int i=0;i<BUF_SIZE;i++) packetBuffer[i] = 0;
+//    for(int i=0;i<BUF_SIZE;i++) curMessage[i] = 0;
+
     
     delay(10);
   }
